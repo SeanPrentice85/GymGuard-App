@@ -37,6 +37,7 @@ async def send_sms(request: SMSRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # Railway automatically assigns a PORT (often 8080), so we must detect it.
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # Railway automatically assigns a PORT (likely 8080), so we must detect it.
+    # We add timeout_keep_alive to stop the "Stopping Container" error.
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port, timeout_keep_alive=60)
