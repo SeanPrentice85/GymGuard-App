@@ -1,0 +1,189 @@
+{
+  "name": "Daily Model Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id as gym_id FROM public.gyms",
+        "options": {}
+      },
+      "name": "Get Gyms",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "postgres": "Supabase Connection"
+      }
+    },
+    {
+        "parameters": {
+            "batchSize": 1,
+            "options": {}
+        },
+        "name": "Split In Batches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 1,
+        "position": [
+            650,
+            300
+        ]
+    },
+    {
+        "parameters": {
+             "operation": "executeQuery",
+             "query": "SELECT count(*) as count, avg(last_churn_score) as mean_score, count(*) filter (where last_churn_score >= 70) as high_risk_count FROM public.members WHERE gym_id = $1",
+             "additionalFields": {
+                 "queryParams": "={{$node[\"Split In Batches\"].json[\"gym_id\"]}}"
+             }
+        },
+        "name": "Calc Score Stats",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+            850,
+            200
+        ],
+        "credentials": {
+            "postgres": "Supabase Connection"
+        }
+    },
+    {
+         "parameters": {
+             "operation": "executeQuery",
+             "query": "-- Calculate Null Counts for critical features (Example list)\nSELECT \n  count(*) as total_rows,\n  count(*) filter (where avg_class_frequency_total IS NULL) as null_freq,\n  count(*) filter (where days_since_last_visit IS NULL) as null_days\nFROM public.member_features WHERE gym_id = $1",
+             "additionalFields": {
+                 "queryParams": "={{$node[\"Split In Batches\"].json[\"gym_id\"]}}"
+             }
+         },
+         "name": "Calc Feature Stats",
+         "type": "n8n-nodes-base.postgres",
+         "typeVersion": 1,
+         "position": [
+             850,
+             400
+         ],
+         "credentials": {
+             "postgres": "Supabase Connection"
+         }
+    },
+    {
+        "parameters": {
+             "table": "model_monitor_score_stats",
+             "operation": "insert",
+             "columns": "gym_id, count, mean_score, high_risk_count",
+             "options": {}
+        },
+        "name": "Insert Score Stats",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+             1050,
+             200
+        ],
+        "credentials": {
+            "postgres": "Supabase Connection"
+        }
+    },
+    {
+        "parameters": {
+             "functionCode": "// Transform Feature Stats to rows\nconst stats = items[0].json;\nconst gym_id = $node[\"Split In Batches\"].json[\"gym_id\"];\n\nconst rows = [\n    {\n        gym_id: gym_id,\n        feature_name: 'avg_class_frequency_total',\n        count: stats.total_rows,\n        null_count: stats.null_freq\n    },\n    {\n        gym_id: gym_id,\n        feature_name: 'days_since_last_visit',\n        count: stats.total_rows,\n        null_count: stats.null_days\n    }\n];\n\nreturn rows.map(r => ({json: r}));"
+        },
+        "name": "Transform Features",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+            1050,
+            400
+        ]
+    },
+    {
+        "parameters": {
+            "table": "model_monitor_feature_stats",
+            "operation": "insert",
+            "columns": "gym_id, feature_name, count, null_count",
+            "options": {}
+        },
+        "name": "Insert Feature Stats",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+            1250,
+            400
+        ],
+        "credentials": {
+            "postgres": "Supabase Connection"
+        }
+    },
+    {
+        "parameters": {
+            "table": "model_monitor_runs",
+            "operation": "insert",
+            "columns": "gym_id, status, notes",
+            "options": {}
+        },
+        "name": "Log Run",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 1,
+        "position": [
+            1450,
+            300
+        ],
+        "credentials": {
+             "postgres": "Supabase Connection"
+        }
+    }
+  ],
+  "connections": {
+      "Schedule Trigger": {
+          "main": [[{"node": "Get Gyms", "type": "main", "index": 0}]]
+      },
+      "Get Gyms": {
+          "main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]
+      },
+      "Split In Batches": {
+          "main": [
+              [
+                  {"node": "Calc Score Stats", "type": "main", "index": 0},
+                  {"node": "Calc Feature Stats", "type": "main", "index": 0}
+              ]
+          ]
+      },
+      "Calc Score Stats": {
+          "main": [[{"node": "Insert Score Stats", "type": "main", "index": 0}]]
+      },
+      "Insert Score Stats": {
+          "main": [[{"node": "Log Run", "type": "main", "index": 0}]]
+      },
+      "Calc Feature Stats": {
+          "main": [[{"node": "Transform Features", "type": "main", "index": 0}]]
+      },
+      "Transform Features": {
+          "main": [[{"node": "Insert Feature Stats", "type": "main", "index": 0}]]
+      },
+      "Insert Feature Stats": {
+           "main": [[{"node": "Log Run", "type": "main", "index": 0}]]
+      }
+  }
+}

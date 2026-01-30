@@ -1,0 +1,234 @@
+{
+  "name": "Churn Sync Loop",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "member_features",
+        "returnAll": true
+      },
+      "name": "Get All Features",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8000/score",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-KEY",
+              "value": "={{$credentials.Brain_API_Key}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "Gender", "value": "={{$node[\"Get All Features\"].json[\"Gender\"]}}" },
+            { "name": "Near_Location", "value": "={{$node[\"Get All Features\"].json[\"Near_Location\"]}}" },
+            { "name": "Partner", "value": "={{$node[\"Get All Features\"].json[\"Partner\"]}}" },
+            { "name": "Promo_friends", "value": "={{$node[\"Get All Features\"].json[\"Promo_friends\"]}}" },
+            { "name": "Phone", "value": "={{$node[\"Get All Features\"].json[\"Phone\"]}}" },
+            { "name": "Age", "value": "={{$node[\"Get All Features\"].json[\"Age\"]}}" },
+            { "name": "Lifetime_Tenure", "value": "={{$node[\"Get All Features\"].json[\"Lifetime_Tenure\"]}}" },
+            { "name": "Contract_period", "value": "={{$node[\"Get All Features\"].json[\"Contract_period\"]}}" },
+            { "name": "Month_to_end_contract", "value": "={{$node[\"Get All Features\"].json[\"Month_to_end_contract\"]}}" },
+            { "name": "Group_visits", "value": "={{$node[\"Get All Features\"].json[\"Group_visits\"]}}" },
+            { "name": "Avg_class_frequency_total", "value": "={{$node[\"Get All Features\"].json[\"Avg_class_frequency_total\"]}}" },
+            { "name": "Avg_class_frequency_current_month", "value": "={{$node[\"Get All Features\"].json[\"Avg_class_frequency_current_month\"]}}" },
+            { "name": "Avg_additional_charges_total", "value": "={{$node[\"Get All Features\"].json[\"Avg_additional_charges_total\"]}}" },
+            { "name": "Days_Since_Last_Visit", "value": "={{$node[\"Get All Features\"].json[\"Days_Since_Last_Visit\"]}}" },
+            { "name": "Month_1", "value": "={{$node[\"Get All Features\"].json[\"Month_1\"]}}" },
+            { "name": "Month_2", "value": "={{$node[\"Get All Features\"].json[\"Month_2\"]}}" },
+            { "name": "Month_3", "value": "={{$node[\"Get All Features\"].json[\"Month_3\"]}}" },
+            { "name": "Month_4", "value": "={{$node[\"Get All Features\"].json[\"Month_4\"]}}" },
+            { "name": "Month_5", "value": "={{$node[\"Get All Features\"].json[\"Month_5\"]}}" },
+            { "name": "Month_6", "value": "={{$node[\"Get All Features\"].json[\"Month_6\"]}}" },
+            { "name": "Month_7", "value": "={{$node[\"Get All Features\"].json[\"Month_7\"]}}" },
+            { "name": "Month_8", "value": "={{$node[\"Get All Features\"].json[\"Month_8\"]}}" },
+            { "name": "Month_9", "value": "={{$node[\"Get All Features\"].json[\"Month_9\"]}}" },
+            { "name": "Month_10", "value": "={{$node[\"Get All Features\"].json[\"Month_10\"]}}" },
+            { "name": "Month_11", "value": "={{$node[\"Get All Features\"].json[\"Month_11\"]}}" },
+            { "name": "Month_12", "value": "={{$node[\"Get All Features\"].json[\"Month_12\"]}}" },
+            { "name": "Month_13", "value": "={{$node[\"Get All Features\"].json[\"Month_13\"]}}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "POST Brain Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Brain_API_Key",
+          "name": "Brain API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "last_churn_score",
+              "value": "={{$json[\"churn_probability_score\"]}}"
+            }
+          ],
+          "string": [
+             {
+               "name": "last_score_date",
+               "value": "={{new Date().toISOString()}}"
+             }
+          ],
+          "boolean": [
+            {
+              "name": "is_high_risk",
+              "value": "={{$json[\"churn_probability_score\"] >= 70.0}}"
+            }
+          ]
+        }
+      },
+      "name": "Compute Flags",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "members",
+        "updateKey": "gym_id,member_id",
+        "columns": "last_churn_score,last_score_date,is_high_risk"
+      },
+      "name": "Update Members",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "member_score_history",
+        "columns": "gym_id,member_id,churn_score,score_date"
+      },
+      "name": "Insert Score History",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Features",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Features": {
+      "main": [
+        [
+          {
+            "node": "POST Brain Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Brain Score": {
+      "main": [
+        [
+          {
+            "node": "Compute Flags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Flags": {
+      "main": [
+        [
+          {
+            "node": "Update Members",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Members": {
+      "main": [
+        [
+          {
+            "node": "Insert Score History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

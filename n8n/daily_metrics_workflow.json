@@ -1,0 +1,118 @@
+{
+  "name": "Daily Metrics Builder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id as gym_id from gyms where status = 'active';"
+      },
+      "name": "Get Active Gyms",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Aggregation query for gym {{$json[\"gym_id\"]}}\n-- We calculate metrics for 'yesterday' relative to run time (assuming run at 00:00)\nselect\n  '{{$json[\"gym_id\"]}}'::uuid as gym_id,\n  current_date - interval '1 day' as metric_date,\n  (select count(*) from members where gym_id = '{{$json[\"gym_id\"]}}' and last_churn_score >= 70.0) as high_risk_count,\n  (select count(*) from members where gym_id = '{{$json[\"gym_id\"]}}' and last_contacted_at >= now() - interval '24 hours') as contacted_last_1d_count,\n  (select count(*) from contacted_log where gym_id = '{{$json[\"gym_id\"]}}' and channel = 'sms' and created_at >= current_date - interval '1 day' and created_at < current_date) as sms_sent_count,\n  (select count(*) from contacted_log where gym_id = '{{$json[\"gym_id\"]}}' and channel = 'email' and created_at >= current_date - interval '1 day' and created_at < current_date) as email_sent_count,\n  (select count(*) from engagement_events where gym_id = '{{$json[\"gym_id\"]}}' and channel = 'sms' and event_type = 'click' and created_at >= current_date - interval '1 day' and created_at < current_date) as sms_click_count,\n  (select count(*) from engagement_events where gym_id = '{{$json[\"gym_id\"]}}' and channel = 'email' and event_type = 'open' and created_at >= current_date - interval '1 day' and created_at < current_date) as email_open_count,\n  (select count(*) from engagement_events where gym_id = '{{$json[\"gym_id\"]}}' and channel = 'email' and event_type = 'click' and created_at >= current_date - interval '1 day' and created_at < current_date) as email_click_count;"
+      },
+      "name": "Compute Metrics",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "tableId": "gym_daily_metrics",
+        "upsertKey": "gym_id,metric_date",
+        "columns": "gym_id,metric_date,high_risk_count,contacted_last_1d_count,sms_sent_count,email_sent_count,sms_click_count,email_open_count,email_click_count"
+      },
+      "name": "Upsert Metrics",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Active Gyms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Gyms": {
+      "main": [
+        [
+          {
+            "node": "Compute Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Metrics": {
+      "main": [
+        [
+          {
+            "node": "Upsert Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

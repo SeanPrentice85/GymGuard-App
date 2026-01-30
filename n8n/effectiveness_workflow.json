@@ -1,0 +1,114 @@
+{
+  "name": "Effectiveness Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 2 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Find contacts > 7 days ago that don't have outcomes yet\nselect \n  cl.id as contacted_log_id,\n  cl.gym_id,\n  cl.member_id,\n  cl.channel,\n  cl.created_at as contacted_at\nfrom contacted_log cl\nleft join outreach_outcomes oo on cl.id = oo.contacted_log_id\nwhere oo.id is null\n  and cl.created_at < now() - interval '7 days'\n  and cl.created_at > now() - interval '30 days'\nlimit 50;"
+      },
+      "name": "Get Pending Outcomes",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Aggregate daily effectiveness\ninsert into gym_outreach_effectiveness_daily (gym_id, metric_date, contacts_count, measured_count, avg_delta_7d, improved_percent_7d)\nselect\n  gym_id,\n  current_date as metric_date,\n  (select count(*) from contacted_log where gym_id = oo.gym_id and created_at::date = current_date) as contacts_count,\n  count(*) as measured_count,\n  avg(delta_7d) as avg_delta_7d,\n  (count(*) filter (where improved_7d) * 100.0 / nullif(count(*), 0)) as improved_percent_7d\nfrom outreach_outcomes oo\nwhere measured_count > 0 -- only if we have data\ngroup by gym_id\non conflict (gym_id, metric_date) do update set\n  contacts_count = excluded.contacts_count,\n  measured_count = excluded.measured_count,\n  avg_delta_7d = excluded.avg_delta_7d,\n  improved_percent_7d = excluded.improved_percent_7d;"
+      },
+      "name": "Aggregate Effectiveness",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    },
+    {
+        "parameters": {
+            "functionCode": "// Javascript logic to find comparing scores would go here in a real separate node, \n// but for simplicity/speed in this demo, we'll try to do comparisons in SQL if possible or a simpler JS loop.\n// Given the complexity of finding specific 'before' and 'after' rows in SQL efficiently in one go,\n// we will assume a FUNCTION exists or just note this is a placeholder for the logic.\n\n// For this artifact, let's execute the SQL assuming we can join on history.\n// We'll replace this node with a SQL query node that does the heavy lifting."
+        },
+        "name": "Placeholder Logic",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [ 650, 200 ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Complex Query to find scores and insert outcomes\n-- This is an advanced query to simulate the JS logic entirely in Postgres for efficiency\n\nwith outcomes as (\n  select\n    cl.id as contacted_log_id,\n    cl.gym_id,\n    cl.member_id,\n    cl.channel,\n    cl.created_at as contacted_at,\n    (\n      select churn_score from member_score_history \n      where member_id = cl.member_id \n      and score_date <= cl.created_at \n      order by score_date desc limit 1\n    ) as score_before,\n    (\n      select churn_score from member_score_history \n      where member_id = cl.member_id \n      and score_date >= cl.created_at + interval '1 day'\n      and score_date <= cl.created_at + interval '7 days'\n      order by score_date desc limit 1\n    ) as score_after_7d\n  from contacted_log cl\n  left join outreach_outcomes oo on cl.id = oo.contacted_log_id\n  where oo.id is null\n    and cl.created_at < now() - interval '7 days'\n    and cl.created_at > now() - interval '30 days'\n)\ninsert into outreach_outcomes (gym_id, member_id, contacted_log_id, channel, contacted_at, score_before, score_after_7d, delta_7d, improved_7d)\nselect\n  gym_id,\n  member_id,\n  contacted_log_id,\n  channel,\n  contacted_at,\n  score_before,\n  score_after_7d,\n  (score_after_7d - score_before) as delta_7d,\n  ((score_after_7d - score_before) <= -5.0) as improved_7d\nfrom outcomes\nwhere score_before is not null and score_after_7d is not null;"
+      },
+      "name": "Calculate & Insert Outcomes",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "Supabase_Service",
+          "name": "Supabase Service Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Calculate & Insert Outcomes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate & Insert Outcomes": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Effectiveness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
