@@ -5,8 +5,13 @@ import os
 
 app = FastAPI()
 
-# TEST MODE: This allows ANY website to talk to this API. 
-# We use this to prove the connection is working.
+# 1. THE HEALTH CHECK (Heartbeat)
+# This tells Railway to stop killing the container.
+@app.get("/")
+async def health_check():
+    return {"status": "healthy", "container": "alluring-warmth"}
+
+# 2. TOTAL OPENNESS SECURITY
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -20,7 +25,7 @@ class SMSRequest(BaseModel):
 
 @app.post("/api/messages/send-sms")
 async def send_sms(request: SMSRequest):
-    # This WILL appear in your Railway 'Deploy Logs' if the connection is successful.
+    # This will appear in your Railway logs if the website successfully talks to the API
     print(f"--- ACTION TRIGGERED ---")
     print(f"SUCCESS: Received request for Member ID: {request.member_id}")
     
@@ -28,6 +33,7 @@ async def send_sms(request: SMSRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    # Using the PORT assigned by Railway or defaulting to 8080 for local tests.
+    # Using the PORT assigned by Railway or defaulting to 8080
     port = int(os.environ.get("PORT", 8080))
+    # timeout_keep_alive=60 helps keep the connection from dropping during the handshake
     uvicorn.run(app, host="0.0.0.0", port=port, timeout_keep_alive=60)
