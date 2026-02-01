@@ -90,8 +90,8 @@ export default function HomePage() {
         // Send via API (Phase 7C -> Phase 13 Strict Auth)
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("Not authenticated");
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/messages/send-sms`, {
+        import { apiUrl } from "@/lib/api";
+        const response = await fetch(apiUrl("/api/messages/send-sms"), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -130,8 +130,8 @@ export default function HomePage() {
            // Better: fetch profile.
            const { data: profile } = await supabase.from('profiles').select('gym_id').eq('user_id', session.user.id).single();
            if (!profile) throw new Error("Profile not found");
-
-           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/campaigns/start-mass-outreach`, {
+           import { apiUrl } from "@/lib/api";
+           const response = await fetch(apiUrl("/api/campaigns/start-mass-outreach"), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
