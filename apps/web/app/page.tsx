@@ -19,7 +19,8 @@ export default function GymGuardDashboard() {
 
   const handleAction = async (memberId: string) => {
     try {
-      const response = await fetch('http://localhost:8000/api/messages/send-sms', {
+      import { apiUrl } from "@/lib/api";
+      const response = await fetch(apiUrl("/api/messages/send-sms"), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: String(memberId) }) 
