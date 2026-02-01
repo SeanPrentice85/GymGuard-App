@@ -29,9 +29,10 @@ export default function GymGuardDashboard() {
     setIsProcessing(true);
     try {
       // 1. Trigger Python Backend (Port 8000)
-      const url = isMass 
-        ? 'http://localhost:8000/api/campaigns/start-mass-outreach' 
-        : 'http://localhost:8000/api/messages/send-sms';
+      import { apiUrl } from "@/lib/api";
+      const url = isMass
+  ? apiUrl("/api/campaigns/start-mass-outreach")
+  : apiUrl("/api/messages/send-sms");
       
       const response = await fetch(url, {
         method: 'POST',
