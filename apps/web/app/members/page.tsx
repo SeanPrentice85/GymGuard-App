@@ -22,7 +22,11 @@ export default function MemberDirectory() {
 
   const sendText = async (id: string) => {
     try {
-      const res = await fetch('http://localhost:8000/api/messages/send-sms', {
+      import { apiUrl } from "@/lib/api";
+      const res = await fetch(apiUrl("/api/messages/send-sms"), {
+
+
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: id })
