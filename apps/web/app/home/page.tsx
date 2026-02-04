@@ -131,7 +131,7 @@ export default function HomePage() {
            // Better: fetch profile.
            const { data: profile } = await supabase.from('profiles').select('gym_id').eq('user_id', session.user.id).single();
            if (!profile) throw new Error("Profile not found");
-           import { apiUrl } from "@/lib/api";
+        
            const response = await fetch(apiUrl("/api/campaigns/start-mass-outreach"), {
                 method: 'POST',
                 headers: {
