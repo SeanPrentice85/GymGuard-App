@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { apiUrl } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function MemberDirectory() {
   const [members, setMembers] = useState<any[]>([]);
@@ -34,7 +35,7 @@ export default function MemberDirectory() {
       });
       if (res.ok) {
         await supabase.from('members').update({ last_contacted_at: new Date().toISOString() }).eq('id', id);
-        alert("Success! Message delivered.");
+        toast.alert("Success! Message delivered.");
         fetchMembers();
       }
     } catch (err) { alert("Backend Connection Failed"); }
