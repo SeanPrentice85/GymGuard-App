@@ -5,6 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from 'lucide-react';
+import { apiUrl } from "@/lib/api";
 
 export default function GymGuardDashboard() {
   const [members, setMembers] = useState<any[]>([]);
@@ -19,7 +20,7 @@ export default function GymGuardDashboard() {
 
   const handleAction = async (memberId: string) => {
     try {
-      import { apiUrl } from "@/lib/api";
+     
       const response = await fetch(apiUrl("/api/messages/send-sms"), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
