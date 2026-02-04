@@ -18,7 +18,7 @@ export default function LoginPage() {
           theme="dark"
           showLinks={false}
           providers={[]}
-          redirectTo="http://localhost:3000/auth/callback"
+          redirectTo={`${window.location.origin}/auth/callback`}
         />
       </div>
     </div>
