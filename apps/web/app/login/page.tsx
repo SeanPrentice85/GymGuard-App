@@ -18,7 +18,7 @@ export default function LoginPage() {
           theme="dark"
           showLinks={false}
           providers={[]}
-          redirectTo={`${window.location.origin}/auth/callback`}
+          redirectTo={`${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`}
         />
       </div>
     </div>
