@@ -17,7 +17,7 @@ export default function RootLayout({
       <body className="bg-gray-50 text-gray-900">
         <nav className="flex items-center justify-between p-4 bg-white shadow-sm border-b">
           <div className="flex gap-6 italic font-bold text-blue-600">
-            GymGuard AI 02/04/26 A
+            GymGuard AI
           </div>
           <div className="flex gap-4">
             <Link href="/" className="hover:text-blue-500 font-medium">Dashboard</Link>
