@@ -5,6 +5,7 @@ import { supabase } from '@/src/lib/supabaseClient'; // Adjusted path
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Megaphone, RefreshCw } from 'lucide-react';
+import { apiUrl } from "@/lib/api";
 
 // Update Member interface to match exact schema
 interface Member {
@@ -90,7 +91,7 @@ export default function HomePage() {
         // Send via API (Phase 7C -> Phase 13 Strict Auth)
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error("Not authenticated");
-        import { apiUrl } from "@/lib/api";
+        
         const response = await fetch(apiUrl("/api/messages/send-sms"), {
             method: 'POST',
             headers: {
