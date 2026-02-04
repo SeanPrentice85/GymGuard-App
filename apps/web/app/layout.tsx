@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: 'Membership Monitor',
@@ -31,4 +32,15 @@ export default function RootLayout({
       </body>
     </html>
   )
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Toaster richColors />
+      </body>
+    </html>
+  );
 }
