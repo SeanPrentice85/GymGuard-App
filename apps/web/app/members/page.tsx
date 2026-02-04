@@ -5,6 +5,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { apiUrl } from "@/lib/api";
 
 export default function MemberDirectory() {
   const [members, setMembers] = useState<any[]>([]);
@@ -22,7 +23,7 @@ export default function MemberDirectory() {
 
   const sendText = async (id: string) => {
     try {
-      import { apiUrl } from "@/lib/api";
+     
       const res = await fetch(apiUrl("/api/messages/send-sms"), {
 
 
