@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, User, AlertCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { apiUrl } from "@/lib/api";
 
 export default function GymGuardDashboard() {
   const [members, setMembers] = useState<any[]>([]);
@@ -29,7 +30,6 @@ export default function GymGuardDashboard() {
     setIsProcessing(true);
     try {
       // 1. Trigger Python Backend (Port 8000)
-      import { apiUrl } from "@/lib/api";
       const url = isMass
   ? apiUrl("/api/campaigns/start-mass-outreach")
   : apiUrl("/api/messages/send-sms");
