@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from 'lucide-react';
 import { apiUrl } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function GymGuardDashboard() {
   const [members, setMembers] = useState<any[]>([]);
