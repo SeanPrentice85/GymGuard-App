@@ -27,8 +27,8 @@ export default function GymGuardDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: String(memberId) }) 
       });
-      if (response.ok) toast.alert("Success! SMS sent.");
-    } catch (err) { toast.alert("Connection failed."); }
+      if (response.ok) toast.success("Success! SMS sent.");
+    } catch (err) { toast.error("Connection failed."); }
   };
 
   return (
