@@ -35,10 +35,10 @@ export default function MemberDirectory() {
       });
       if (res.ok) {
         await supabase.from('members').update({ last_contacted_at: new Date().toISOString() }).eq('id', id);
-        toast.alert("Success! Message delivered.");
+        toast.success("Success! Message delivered.");
         fetchMembers();
       }
-    } catch (err) { toast.alert("Backend Connection Failed"); }
+    } catch (err) { toast.error("Backend Connection Failed"); }
   };
 
   const filtered = members.filter(m => `${m.first_name} ${m.last_name}`.toLowerCase().includes(search.toLowerCase()));
