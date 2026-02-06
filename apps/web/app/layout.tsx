@@ -29,18 +29,8 @@ export default function RootLayout({
         <main className="max-w-7xl mx-auto p-4">
           {children}
         </main>
+      <Toaster richColors />
       </body>
     </html>
   )
-}
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <Toaster richColors />
-      </body>
-    </html>
-  );
 }
