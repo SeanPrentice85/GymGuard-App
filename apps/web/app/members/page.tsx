@@ -38,7 +38,7 @@ export default function MemberDirectory() {
         toast.alert("Success! Message delivered.");
         fetchMembers();
       }
-    } catch (err) { alert("Backend Connection Failed"); }
+    } catch (err) { toast.alert("Backend Connection Failed"); }
   };
 
   const filtered = members.filter(m => `${m.first_name} ${m.last_name}`.toLowerCase().includes(search.toLowerCase()));
